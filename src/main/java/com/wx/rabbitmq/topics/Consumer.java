@@ -1,19 +1,12 @@
-package com.wx.rabbitmq.simple;
+package com.wx.rabbitmq.topics;
 
-import com.rabbitmq.client.Channel;
-import com.rabbitmq.client.Connection;
-import com.rabbitmq.client.ConnectionFactory;
+import com.rabbitmq.client.*;
 
 import java.io.IOException;
 import java.util.concurrent.TimeoutException;
 
-/**
- * 生产者
- */
-public class Producer {
-
+public class Consumer {
     public static void main(String[] args) {
-        //所有的中间件都是基于tcp/ip协议，rabbitmq基于amqp协议
 
         //ip port
 
@@ -30,31 +23,25 @@ public class Producer {
 
         try {
             //    2.创建连接Connection
-            connection = connectionFactory.newConnection("生产者");
+            connection = connectionFactory.newConnection("消费者");
 
 //    3.通过连接获取通道Channel
             channel = connection.createChannel();
-//    4.通过创建交换机，声明队列，绑定关系，路由key，发送消息和接收消息
+
+//  指定一个消息队列获取消息
             String queueName = "我的消息队列1";
-            /**
-             * @param1 队列名称
-             * @param2 是否持久化,默认false
-             * @param3 排他性,是否独占独立
-             * @param4 是否自动删除，最后一个消费者消费完毕后，是否删除
-             * @param5 携带附属参数
-             */
-            channel.queueDeclare(queueName, false, false, false, null);
-//    5.准备消息内容
-            String message = "hello world";
-//    6.发送消息给队列
-            /**
-             * @param1 交换机  不指定则使用默认交换机
-             * @param2 队列、路由key
-             * @param3 消息状态控制
-             * @param4 消息的内容
-             */
-            channel.basicPublish("", queueName, null, message.getBytes());
-            System.out.println("消息发送成功1");
+            //这里的true指的是是否自动确认
+            channel.basicConsume(queueName, true, new DeliverCallback() {
+                        @Override
+                        public void handle(String s, Delivery delivery) throws IOException {
+                            System.out.println("收到的消息是：" + new String(delivery.getBody(), "UTF-8"));
+                        }
+                    }, new CancelCallback() {
+                        @Override
+                        public void handle(String s) throws IOException {
+                            System.out.println("接收消息失败");
+                        }
+                    });
 //    7.关闭通道和连接
         } catch (IOException e) {
             throw new RuntimeException(e);

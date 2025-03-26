@@ -1,4 +1,4 @@
-package com.wx.rabbitmq.simple;
+package com.wx.rabbitmq.topics;
 
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
@@ -35,7 +35,13 @@ public class Producer {
 //    3.通过连接获取通道Channel
             channel = connection.createChannel();
 //    4.通过创建交换机，声明队列，绑定关系，路由key，发送消息和接收消息
-            String queueName = "我的消息队列1";
+            String queueName = "我的消息队列";
+            String exchangeName = "topic_exchange";
+            //定义路由key
+            String routingKey = "com.email.*";
+            String exchangeType = "topic";
+            //使用持久化的方式
+            channel.exchangeDeclare(exchangeName, exchangeType,true);
             /**
              * @param1 队列名称
              * @param2 是否持久化,默认false
@@ -43,9 +49,17 @@ public class Producer {
              * @param4 是否自动删除，最后一个消费者消费完毕后，是否删除
              * @param5 携带附属参数
              */
-            channel.queueDeclare(queueName, false, false, false, null);
+            channel.queueDeclare(queueName + 1, false, false, false, null);
+            channel.queueDeclare(queueName + 2, false, false, false, null);
+            channel.queueDeclare(queueName + 3, false, false, false, null);
+
+            //绑定交换机和队列
+            channel.queueBind(queueName + 1, exchangeName, routingKey);
+            channel.queueBind(queueName + 2, exchangeName, routingKey);
+            channel.queueBind(queueName + 3, exchangeName, routingKey);
 //    5.准备消息内容
             String message = "hello world";
+
 //    6.发送消息给队列
             /**
              * @param1 交换机  不指定则使用默认交换机
@@ -53,7 +67,7 @@ public class Producer {
              * @param3 消息状态控制
              * @param4 消息的内容
              */
-            channel.basicPublish("", queueName, null, message.getBytes());
+            channel.basicPublish(exchangeName, routingKey, null, message.getBytes());
             System.out.println("消息发送成功1");
 //    7.关闭通道和连接
         } catch (IOException e) {
